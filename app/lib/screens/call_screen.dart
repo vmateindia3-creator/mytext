@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:provider/provider.dart';
 
-import '../providers/auth_provider.dart';
 import '../services/socket_service.dart';
 import '../theme.dart';
 
@@ -33,7 +32,6 @@ class _CallScreenState extends State<CallScreen> {
   RTCPeerConnection? _pc;
   MediaStream? _localStream;
   SocketService? _socket;
-  String? _myId;
 
   String _status = 'Connecting…';
   bool _muted = false;
@@ -62,7 +60,6 @@ class _CallScreenState extends State<CallScreen> {
 
   Future<void> _start() async {
     _socket = context.read<SocketService>();
-    _myId = context.read<AuthProvider>().user?.id;
 
     await _localRenderer.initialize();
     await _remoteRenderer.initialize();
