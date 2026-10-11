@@ -1,10 +1,12 @@
 name: Build APK
 
-# Builds an installable Android APK automatically and attaches it to the run,
-# so you can download it without installing Flutter or the Android SDK locally.
+# Builds an installable Android APK and attaches it to the run, so you can
+# download it without installing Flutter or the Android SDK locally.
 #
 # Where to find it:  Actions tab -> the "Build APK" run -> "Artifacts" -> mytext-apk
-# You can also trigger a build by hand: Actions -> Build APK -> "Run workflow".
+#
+# You can also build by hand, and point the app at your own server at the same
+# time:  Actions -> Build APK -> "Run workflow" -> paste your backend URL.
 
 on:
   push:
@@ -13,6 +15,11 @@ on:
       - 'app/**'
       - '.github/workflows/build-apk.yml'
   workflow_dispatch:
+    inputs:
+      api_url:
+        description: 'Backend URL the app should talk to (e.g. https://mytext-server.onrender.com)'
+        required: false
+        default: 'http://10.0.2.2:4000'
 
 jobs:
   apk:
@@ -46,7 +53,10 @@ jobs:
         run: flutter test
 
       - name: Build release APK
-        run: flutter build apk --release
+        run: |
+          API_URL="${{ github.event.inputs.api_url || 'http://10.0.2.2:4000' }}"
+          echo "Building for backend: $API_URL"
+          flutter build apk --release --dart-define=MYTEXT_API_URL="$API_URL"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
