@@ -1,7 +1,7 @@
 {
-  "name": "wavechat-server",
+  "name": "mytext-server",
   "version": "1.0.0",
-  "description": "WaveChat backend — real-time chat, groups, media sharing and WebRTC call signalling.",
+  "description": "Mytext backend — real-time chat, groups, media sharing and WebRTC call signalling.",
   "main": "src/index.js",
   "type": "commonjs",
   "engines": {

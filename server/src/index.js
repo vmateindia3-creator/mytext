@@ -50,9 +50,9 @@ async function start() {
   const server = http.createServer(app);
   initSockets(server, CORS_ORIGIN);
 
-  await connectDB(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/wavechat');
+  await connectDB(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/mytext');
 
-  server.listen(PORT, () => console.log(`[server] WaveChat API listening on :${PORT}`));
+  server.listen(PORT, () => console.log(`[server] Mytext API listening on :${PORT}`));
   return server;
 }
 

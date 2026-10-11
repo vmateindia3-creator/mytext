@@ -18,7 +18,7 @@ async function main() {
 
   console.log('1. starting in-memory MongoDB...');
   const mongo = await MongoMemoryServer.create();
-  process.env.MONGO_URI = mongo.getUri('wavechat_test');
+  process.env.MONGO_URI = mongo.getUri('mytext_test');
 
   const { createApp } = require('../src/index');
   const { initSockets } = require('../src/sockets');

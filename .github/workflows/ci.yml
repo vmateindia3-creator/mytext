@@ -26,7 +26,7 @@ jobs:
         run: npm run test:unit
       - name: End-to-end tests
         env:
-          MONGO_URI: mongodb://127.0.0.1:27017/wavechat_test
+          MONGO_URI: mongodb://127.0.0.1:27017/mytext_test
         run: npm test
 
   app:
@@ -36,9 +36,11 @@ jobs:
         working-directory: app
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: subosito/flutter-action@v2
         with:
-          node-version: '20'
-      - run: npm install
-      - name: Type check
-        run: npm run typecheck
+          channel: stable
+      - run: flutter pub get
+      - name: Static analysis
+        run: flutter analyze
+      - name: Tests
+        run: flutter test

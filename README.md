@@ -1,124 +1,135 @@
-# WaveChat
+# Mytext
 
-A working, self-hostable messaging app — 1:1 chat, group chats, media sharing and WebRTC voice/video calls. Node.js + Socket.io backend, React Native (Expo) Android app.
+A working, self-hostable messaging app — 1:1 chat, group chats, media sharing and WebRTC voice/video calls.
 
-> **What this is:** a complete, runnable MVP in the spirit of Telegram. Real-time messaging, accounts, groups, file/photo sharing and peer-to-peer calls all work. It is *not* a drop-in clone of Telegram's full feature set (no E2E encryption, no channels, no bots, no global CDN). See [Scope & limitations](#scope--limitations) for the honest picture.
+- **App:** Flutter / Dart (Android, Play Store-ready)
+- **Backend:** Node.js + Express + Socket.io + MongoDB
+
+> **What this is:** a complete, runnable MVP in the spirit of WhatsApp / Telegram. Accounts, real-time messaging, groups, photo & file sharing and peer-to-peer calls all work. It is *not* a drop-in clone of their full feature set (no end-to-end encryption, no channels, no bots). See [Scope & limitations](#scope--limitations).
 
 ---
 
-## Features
+## Why Flutter?
 
-- **Accounts** — register / login with JWT auth, bcrypt-hashed passwords.
-- **1:1 chat** — real-time messages over Socket.io, online/last-seen presence.
-- **Group chats** — create groups, add members, admin list.
-- **Media sharing** — send photos and documents (25 MB limit per file).
-- **Read receipts & typing indicators**.
-- **Voice / video calls** — WebRTC with server-relayed signalling and STUN/TURN config.
-- **Message history** — paginated, stored in MongoDB.
+The Android app is written in **Flutter (Dart)** — one clean codebase, a native-feeling UI, and a straightforward path to Google Play. The code is deliberately simple and readable: small files, clear names, one job per class.
 
 ## Repository layout
 
 ```
-wavechat/
-├── server/            Node.js + Express + Socket.io API
-│   ├── src/
-│   │   ├── index.js        app entry (HTTP + sockets)
-│   │   ├── config/db.js    Mongo connection
-│   │   ├── models/         User, Conversation, Message
-│   │   ├── middleware/     JWT auth
-│   │   ├── routes/         auth, users, conversations, upload
-│   │   ├── sockets/        real-time events + call signalling
-│   │   └── utils/          message helpers, ICE servers
-│   └── test/               unit + end-to-end smoke tests
-├── app/               React Native (Expo) client
-│   └── src/
-│       ├── api/            REST client
-│       ├── context/        auth + chat state
-│       ├── screens/        login, chats, chat, new chat, group, call
-│       ├── components/     avatar, message bubble
-│       └── navigation/     stack navigator
-├── docker-compose.yml  local MongoDB + server
-└── render.yaml         one-click backend deploy on Render
+mytext/
+├── app/                     Flutter (Dart) Android app
+│   ├── lib/
+│   │   ├── main.dart            entry point
+│   │   ├── app.dart             providers + auth gate
+│   │   ├── config.dart          API URL + app name
+│   │   ├── theme.dart           colours & styles
+│   │   ├── models/              User, Message, Conversation
+│   │   ├── services/            API, Socket.io, local storage
+│   │   ├── providers/           auth + chat state (Provider)
+│   │   ├── screens/             login, home, chat, group, profile, call
+│   │   └── widgets/             avatar, message bubble, chat tile
+│   ├── android/                 Play Store-ready Android config
+│   ├── assets/icon/             Play Store 512×512 icon
+│   └── test/                    unit tests
+├── server/                  Node.js + Socket.io backend
+│   └── src/                     models, routes, sockets, utils
+├── docker-compose.yml       local MongoDB + server
+└── render.yaml              one-click backend deploy on Render
 ```
 
 ---
 
-## Quick start (local)
+## Quick start
 
 ### 1. Backend
 
 ```bash
 cd server
-cp .env.example .env          # edit if needed
+cp .env.example .env       # edit if needed
 npm install
-npm run dev                   # http://localhost:4000
+npm run dev                # http://localhost:4000
 ```
 
-You need a MongoDB. Either run the bundled Docker Compose from the repo root:
+You need MongoDB. Easiest is the bundled Docker service from the repo root:
 
 ```bash
 docker compose up -d mongo
 ```
 
-…or point `MONGO_URI` in `server/.env` at a free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster.
+…or set `MONGO_URI` in `server/.env` to a free [MongoDB Atlas](https://www.mongodb.com/atlas) cluster.
 
-Verify the API:
+Check it works:
 
 ```bash
-npm run test:unit     # no database required
-npm test              # full flow (needs a reachable MongoDB)
+npm run test:unit    # no database needed
+npm test             # full flow (needs MongoDB)
 ```
 
 ### 2. App
 
 ```bash
 cd app
-cp .env.example .env          # set EXPO_PUBLIC_API_URL
-npm install
-npx expo start
+flutter pub get
+flutter run
 ```
 
-Scan the QR with **Expo Go** on Android, or press `a` to launch an emulator.
+Before running, open `app/lib/config.dart` and set `AppConfig.apiUrl`:
 
-> **Important:** on a physical phone, `localhost` means the phone itself. Set `EXPO_PUBLIC_API_URL` to your computer's LAN IP (e.g. `http://192.168.1.20:4000`) and make sure both are on the same Wi-Fi.
+- **Android emulator:** `http://10.0.2.2:4000` (already the default)
+- **Real phone:** your computer's LAN IP, e.g. `http://192.168.1.20:4000`
+
+> If `flutter run` complains about missing platform files, run `flutter create .` once inside `app/` — it regenerates any missing Android scaffolding without touching your Dart code.
 
 ---
 
-## Deploy it for free (live, globally reachable)
+## Publishing to Google Play
 
-### Backend → Render
+The project is already set up for it:
 
-1. Push this repo to GitHub.
-2. Create a free **MongoDB Atlas** cluster (M0). Whitelist `0.0.0.0/0` and copy the connection string.
-3. On [Render](https://render.com), choose **New → Blueprint** and point it at your repo. It reads `render.yaml`.
-4. Set these environment variables when prompted:
-   - `MONGO_URI` — your Atlas connection string
-   - `PUBLIC_URL` — your Render URL, e.g. `https://wavechat-server.onrender.com`
-   - `JWT_SECRET` is generated automatically.
-5. Deploy. Your API is live at `https://wavechat-server.onrender.com/health`.
+| Setting | Value |
+| --- | --- |
+| Application ID | `com.mytext.app` |
+| App name (label) | `Mytext` |
+| Version | `1.0.0+1` (`pubspec.yaml`) |
+| Icon | generated for all densities + `assets/icon/play_store_512.png` |
+| Permissions | only INTERNET, CAMERA, RECORD_AUDIO, media read |
 
-### App → an installable APK
+**Build a release bundle:**
 
 ```bash
 cd app
-npx eas build -p android --profile preview
+flutter build appbundle --release     # produces build/app/outputs/bundle/release/app-release.apk.aab
 ```
 
-EAS returns a download link for an `.apk` you can install on any Android phone. Set `EXPO_PUBLIC_API_URL` to your Render URL before building.
+**Sign it properly** (the default build uses the debug key — fine for testing, not for the Play Store):
+
+1. Create a keystore:
+   ```bash
+   keytool -genkey -v -keystore ~/mytext-upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+   ```
+2. Create `app/android/key.properties`:
+   ```
+   storePassword=YOUR_PASSWORD
+   keyPassword=YOUR_PASSWORD
+   keyAlias=upload
+   storeFile=/absolute/path/to/mytext-upload.jks
+   ```
+3. In `app/android/app/build.gradle`, load those properties and point the `release` signing config at them (a two-line change — swap `signingConfigs.debug` for `signingConfigs.release`).
+
+Then upload the `.aab` in the [Google Play Console](https://play.google.com/console). You'll also need a store listing (screenshots, description, privacy policy URL).
+
+> **Note on permissions:** Play may ask you to justify CAMERA / RECORD_AUDIO. They are used only for in-app voice/video calls and photo sharing — mention that in the Data Safety form. If you drop calls, you can remove them from `AndroidManifest.xml` and reduce review friction.
 
 ---
 
-## Scope & limitations (read this)
+## Deploy the backend (free)
 
-Being upfront about what this MVP does and does not do:
-
-- **Encryption:** messages are stored in plaintext in MongoDB. Telegram's headline feature is end-to-end encryption, which this does not implement. Do not use it for sensitive conversations as-is.
-- **File storage:** uploads are written to the server's local disk. Render's free tier has an *ephemeral* filesystem, so uploaded media is **lost on every redeploy/restart**. For real use, switch the upload route to S3 / Cloudinary / Backblaze B2.
-- **Calls:** work best 1:1 on good networks. For reliability behind strict/mobile NATs you must set `TURN_URL` / `TURN_USERNAME` / `TURN_CREDENTIAL` (a hosted TURN like Twilio, or a self-hosted `coturn`). Calls also require a **development build** of the app (`react-native-webrtc` is a native module and does not run in Expo Go).
-- **Scale:** a single Node process. For large audiences you'd add a Redis adapter for Socket.io, horizontal scaling, and a CDN for media.
-- **Not included:** channels, bots, message search, group calls, disappearing messages, push notifications (add `expo-notifications` + FCM).
-
-These are all natural next steps — the codebase is structured so each can be added without a rewrite.
+1. Push this repo to GitHub.
+2. Create a free **MongoDB Atlas** M0 cluster; whitelist `0.0.0.0/0`; copy the connection string.
+3. On [Render](https://render.com): **New → Blueprint**, point at your repo. It reads `render.yaml`.
+4. Set `MONGO_URI` (Atlas string) and `PUBLIC_URL` (your Render URL, e.g. `https://mytext-server.onrender.com`). `JWT_SECRET` is generated automatically.
+5. Deploy → API live at `https://mytext-server.onrender.com/health`.
+6. Point `AppConfig.apiUrl` in the app at that URL, then rebuild.
 
 ---
 
@@ -137,6 +148,18 @@ These are all natural next steps — the codebase is structured so each can be a
 | `GET` | `/health` | Health check |
 
 **Socket.io events:** `message:send`, `message:new`, `message:read`, `typing`, `presence`, `conversation:join/leave/updated`, and call signalling `call:invite`, `call:offer`, `call:answer`, `call:ice`, `call:end`, `call:reject`.
+
+---
+
+## Scope & limitations (read this)
+
+- **Encryption:** messages are stored in plaintext in MongoDB. End-to-end encryption is *not* implemented. Don't use it for sensitive conversations as-is.
+- **File storage:** uploads go to the server's local disk. Render's free tier is ephemeral, so media is **lost on redeploy/restart**. For production, switch `server/src/routes/upload.js` to S3 / Cloudinary / Backblaze B2.
+- **Calls:** `flutter_webrtc` works best 1:1 on good networks. Behind strict/mobile NATs you need a **TURN** server — set `TURN_URL` / `TURN_USERNAME` / `TURN_CREDENTIAL` in the backend env (hosted Twilio TURN, or self-hosted `coturn`).
+- **Scale:** a single Node process. For large audiences, add the Socket.io Redis adapter, horizontal scaling and a media CDN.
+- **Not included:** channels, bots, message search, group calls, disappearing messages, push notifications (add `firebase_messaging`).
+
+Each of these can be added without a rewrite.
 
 ---
 

@@ -1,8 +1,23 @@
-node_modules/
-.env
-*.log
-dist/
-.expo/
+# OS / editor
 .DS_Store
-uploads/*
-!uploads/.gitkeep
+Thumbs.db
+*.log
+.env
+
+# Node (backend)
+node_modules/
+server/uploads/*
+!server/uploads/.gitkeep
+
+# Flutter (app)
+app/.dart_tool/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/build/
+app/.pub-cache/
+app/.pub/
+app/**/android/local.properties
+app/**/android/.gradle
+app/**/android/key.properties
+app/**/*.jks
+app/**/*.keystore

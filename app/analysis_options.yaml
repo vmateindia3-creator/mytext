@@ -1,0 +1,10 @@
+# Lint rules for the Mytext app.
+# These keep the code clean and consistent — `flutter analyze` uses them.
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    prefer_const_constructors: true
+    prefer_const_declarations: true
+    avoid_print: true
+    require_trailing_commas: true

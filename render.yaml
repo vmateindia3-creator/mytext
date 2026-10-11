@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: wavechat-server
+    name: mytext-server
     runtime: node
     plan: free
     rootDir: server

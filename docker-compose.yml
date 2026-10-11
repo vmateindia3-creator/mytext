@@ -1,4 +1,4 @@
-# Local development stack: MongoDB + the WaveChat API.
+# Local development stack: MongoDB + the Mytext API.
 # Usage:  docker compose up -d mongo     (just the database)
 #         docker compose up              (database + server)
 services:
@@ -17,7 +17,7 @@ services:
       - mongo
     environment:
       PORT: 4000
-      MONGO_URI: mongodb://mongo:27017/wavechat
+      MONGO_URI: mongodb://mongo:27017/mytext
       JWT_SECRET: change-me-in-production
       PUBLIC_URL: http://localhost:4000
       CORS_ORIGIN: '*'

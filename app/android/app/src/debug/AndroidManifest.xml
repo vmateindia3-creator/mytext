@@ -1,0 +1,4 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Flutter needs INTERNET permission to talk to the debugger in debug mode. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+</manifest>
