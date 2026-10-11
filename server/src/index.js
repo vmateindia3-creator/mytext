@@ -7,6 +7,10 @@ const morgan = require('morgan');
 
 const { connectDB } = require('./config/db');
 const { initSockets } = require('./sockets');
+const storage = require('./utils/storage');
+const push = require('./utils/push');
+const sms = require('./utils/sms');
+const mongoose = require('mongoose');
 
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
@@ -27,7 +31,20 @@ function createApp() {
   app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
   // Health check (used by Render and uptime monitors).
-  app.get('/health', (_req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
+  // It also reports whether the permanent storage pieces are wired up, so you
+  // can confirm a deployment at a glance: open  https://<your-app>/health
+  app.get('/health', (_req, res) => {
+    res.json({
+      status: 'ok',
+      uptime: process.uptime(),
+      database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+      storage: storage.driverName(),
+      storageConfigured: storage.isConfigured(),
+      storagePermanent: storage.driverName() !== 'local',
+      push: push.isConfigured() ? 'configured' : 'off',
+      sms: sms.isRealProvider() ? sms.driverName() : 'dev (code shown in app)',
+    });
+  });
 
   app.use('/api/auth', authRoutes);
   app.use('/api/users', userRoutes);

@@ -1,3 +1,14 @@
+# Render Blueprint for the Mytext backend.
+#
+# How to use: push this repo to GitHub, then on Render choose
+#   New -> Blueprint -> pick this repo.
+# Render reads this file and asks you for the values marked `sync: false`.
+#
+# For permanent text + photos you also need:
+#   * a MongoDB Atlas cluster (free) -> paste its string into MONGO_URI
+#   * Cloudinary (free) or S3       -> set STORAGE_DRIVER + the matching keys
+# See the "Make it permanent" section of the README.
+
 services:
   - type: web
     name: mytext-server
@@ -8,16 +19,50 @@ services:
     startCommand: npm start
     healthCheckPath: /health
     envVars:
+      # --- required -------------------------------------------------------
       - key: MONGO_URI
-        sync: false
+        sync: false # e.g. mongodb+srv://user:pass@cluster.mongodb.net/mytext
       - key: JWT_SECRET
         generateValue: true
+      - key: PUBLIC_URL
+        sync: false # your Render URL, e.g. https://mytext-server.onrender.com
+
+      # --- defaults -------------------------------------------------------
       - key: JWT_EXPIRES_IN
         value: 30d
-      - key: PUBLIC_URL
-        sync: false
       - key: CORS_ORIGIN
-        value: "*"
+        value: '*'
+
+      # --- permanent media storage ---------------------------------------
+      # local = the server's disk (Render's free tier wipes it on every
+      # restart, so photos are NOT permanent). Use "cloudinary" or "s3".
+      - key: STORAGE_DRIVER
+        value: local
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+
+      # --- SMS one-time codes --------------------------------------------
+      # console = no SMS is sent; the code is shown inside the app.
+      - key: SMS_DRIVER
+        value: console
+      - key: OTP_DEV_MODE
+        value: 'true'
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_FROM
+        sync: false
+
+      # --- push notifications (optional) ---------------------------------
+      - key: FIREBASE_SERVICE_ACCOUNT
+        sync: false
+
+      # --- voice / video calls (optional) --------------------------------
       - key: TURN_URL
         sync: false
       - key: TURN_USERNAME

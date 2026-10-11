@@ -217,14 +217,44 @@ The default release build is signed with the debug key (fine for testing). For t
 
 ---
 
-## Deploy the backend (free)
+## Deploy the backend on Render (free)
 
 1. Push this repo to GitHub.
-2. Create a free **MongoDB Atlas** M0 cluster; whitelist `0.0.0.0/0`; copy the connection string.
-3. On [Render](https://render.com): **New → Blueprint**, point at your repo (reads `render.yaml`).
-4. Set `MONGO_URI`, `PUBLIC_URL` (your Render URL) and, if you want media on S3, the `S3_*` vars. `JWT_SECRET` is generated automatically.
-5. Deploy → API live at `https://mytext-server.onrender.com/health`.
-6. Set `AppConfig.apiUrl` to that URL and push, so the APK workflow rebuilds.
+2. Create a free **MongoDB Atlas** M0 cluster → *Network Access* → allow `0.0.0.0/0` → copy the connection string.
+3. On [Render](https://render.com): **New → Blueprint**, pick this repo. Render reads `render.yaml` and asks for the values marked *sync: false*.
+4. Fill in `MONGO_URI` (the Atlas string) and `PUBLIC_URL` (your Render URL, e.g. `https://mytext-server.onrender.com`). `JWT_SECRET` is generated for you.
+5. Deploy, then open `https://<your-app>.onrender.com/health`.
+6. Build the app against that URL: **Actions → Build APK → Run workflow**, paste the URL, download the APK.
+
+### Make it permanent
+
+Two things decide whether your data survives:
+
+| What | Where it lives | Permanent? |
+| --- | --- | --- |
+| **Messages, accounts, groups** | MongoDB (the `MONGO_URI` you set) | ✅ **Yes**, if you use **MongoDB Atlas** — it is a real managed database. |
+| **Photos & files** | The `STORAGE_DRIVER` you chose | ❌ **No** with `local` — Render's free disk is wiped on every restart. ✅ **Yes** with `cloudinary` or `s3`. |
+
+So for permanent photos, set in Render:
+
+```
+STORAGE_DRIVER = cloudinary
+CLOUDINARY_CLOUD_NAME = ...
+CLOUDINARY_API_KEY    = ...
+CLOUDINARY_API_SECRET = ...
+```
+
+[Cloudinary](https://cloudinary.com) has a free tier (25 GB) and is the quickest to set up. Cloudflare R2 / Backblaze B2 work too — use `STORAGE_DRIVER=s3` with the `S3_*` variables.
+
+**Confirm it worked:** open `/health`. You want to see
+
+```json
+{ "database": "connected", "storage": "cloudinary", "storagePermanent": true }
+```
+
+### One honest catch: Render's free tier sleeps
+
+A free Render web service **spins down after ~15 minutes of no traffic**, and the next request takes ~30–50 seconds to wake it up. In practice that means the *first* message after a quiet spell is slow, then everything is instant. If that bothers you, either upgrade that one service to a paid instance (a few dollars a month), or ping `/health` every 10 minutes from a free uptime monitor (e.g. UptimeRobot) to keep it awake.
 
 ---
 
