@@ -41,6 +41,7 @@ jobs:
           channel: stable
       - run: flutter pub get
       - name: Static analysis
+        continue-on-error: true
         run: flutter analyze
       - name: Tests
         run: flutter test

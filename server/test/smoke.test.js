@@ -16,9 +16,16 @@ async function main() {
   process.env.PUBLIC_URL = '';
   process.env.CORS_ORIGIN = '*';
 
-  console.log('1. starting in-memory MongoDB...');
-  const mongo = await MongoMemoryServer.create();
-  process.env.MONGO_URI = mongo.getUri('mytext_test');
+  let mongo = null;
+  if (process.env.MONGO_URI) {
+    // CI (and anyone with a local MongoDB) can point us at a real instance
+    // instead of downloading a mongod binary.
+    console.log('1. using MongoDB from MONGO_URI...');
+  } else {
+    console.log('1. starting in-memory MongoDB...');
+    mongo = await MongoMemoryServer.create();
+    process.env.MONGO_URI = mongo.getUri('mytext_test');
+  }
 
   const { createApp } = require('../src/index');
   const { initSockets } = require('../src/sockets');
@@ -175,7 +182,7 @@ async function main() {
   aliceSocket.close();
   bobSocket.close();
   server.close();
-  await mongo.stop();
+  if (mongo) await mongo.stop();
 
   console.log('\nALL TESTS PASSED ✓');
   process.exit(0);
