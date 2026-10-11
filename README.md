@@ -249,6 +249,7 @@ The default release build is signed with the debug key (fine for testing). For t
 
 1. Push this repo to GitHub.
 2. Create a free **MongoDB Atlas** M0 cluster → *Network Access* → allow `0.0.0.0/0` → copy the connection string.
+   **Step-by-step walkthrough: [`docs/mongodb-setup.md`](docs/mongodb-setup.md)**
 3. On [Render](https://render.com): **New → Blueprint**, pick this repo. Render reads `render.yaml` and asks for the values marked *sync: false*.
 4. Fill in `MONGO_URI` (the Atlas string) and `PUBLIC_URL` (your Render URL, e.g. `https://mytext-server.onrender.com`). `JWT_SECRET` is generated for you.
 5. Deploy, then open `https://<your-app>.onrender.com/health`.
