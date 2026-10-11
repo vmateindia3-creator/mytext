@@ -34,6 +34,7 @@ async function main() {
   assert.strictEqual(Conversation.directKey(a, b), Conversation.directKey(b, a));
 
   console.log('5. ICE servers include STUN, and TURN only when configured...');
+  process.env.PUBLIC_TURN_ENABLED = 'false';
   const base = iceServers();
   assert.ok(base.some((s) => s.urls.startsWith('stun:')));
   assert.ok(!base.some((s) => s.urls.startsWith('turn:')));
@@ -44,6 +45,9 @@ async function main() {
   delete process.env.TURN_URL;
   delete process.env.TURN_USERNAME;
   delete process.env.TURN_CREDENTIAL;
+  // With no TURN configured, a public relay is added so calls can connect.
+  delete process.env.PUBLIC_TURN_ENABLED;
+  assert.ok(iceServers().some((s) => s.urls.startsWith('turn:')));
 
   console.log('6. the Express app builds and unauthenticated routes are locked...');
   const { createApp } = require('../src/index');

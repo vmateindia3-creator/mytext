@@ -18,7 +18,7 @@ A working, self-hostable messaging app — 1:1 chat, group chats, media sharing,
 - **End-to-end encrypted text** — X25519 + HKDF + AES-256-GCM; the server only stores ciphertext.
 - **Push notifications** — Firebase Cloud Messaging, sent to members who are offline.
 - **Read receipts & typing indicators**.
-- **Voice / video calls** — WebRTC with server-relayed signalling and STUN/TURN config.
+- **Voice & video calls** — 1:1 WebRTC calls over the internet, with an incoming-call screen so people can call *you* too.
 - **Automatic APK builds** — GitHub Actions builds an installable APK for you.
 
 ## Repository layout
@@ -174,6 +174,34 @@ npm install cloudinary              # for cloudinary
 ```
 
 > **Important:** with `local`, uploads live on the server's disk. Render's free tier is ephemeral, so files are lost on redeploy. Use `s3` or `cloudinary` in production.
+
+---
+
+## Voice & video calls
+
+Open any 1:1 chat and tap the **📞** (voice) or **📹** (video) button in the top bar. The other person gets a full-screen ringing screen with **Accept / Decline** — they can be on any screen in the app at the time.
+
+You can call anyone who has a Mytext account: start a chat with their phone number (see above), then tap the call button.
+
+**How it connects.** The two phones talk directly to each other over WebRTC. The server only relays the handshake (offer / answer / ICE candidates); it never carries the audio or video.
+
+### Making calls work reliably
+
+WebRTC needs help getting through mobile networks. The server decides what to hand the app:
+
+| Situation | What is used |
+| --- | --- |
+| You set `TURN_URL` (+ username/credential) | **Your own TURN server** — the right answer for production. |
+| You don't | Public **STUN** plus a **free public TURN relay**, so calls have a good chance of connecting out of the box. |
+| `PUBLIC_TURN_ENABLED=false` | Public STUN only. Calls will fail on many mobile networks. |
+
+The free relay is shared with the whole internet and is rate-limited — treat it as a testing crutch. For anything real, run your own [`coturn`](https://github.com/coturn/coturn) or use Twilio's Network Traversal Service and set `TURN_URL` / `TURN_USERNAME` / `TURN_CREDENTIAL`.
+
+### Honest limits
+
+- **Incoming calls ring only while the app is running.** The app listens for calls over its live socket connection. If it has been fully closed, nothing wakes it — that needs push notifications with a full-screen call notification (the backend FCM wiring is in place, but it is not finished on the device side).
+- **Group calls are not supported** — calls are always 1:1.
+- Calls need the microphone (and camera for video). The permissions are already declared in `AndroidManifest.xml`.
 
 ---
 

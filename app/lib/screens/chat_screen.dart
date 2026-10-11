@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../models/conversation.dart';
+import '../models/user.dart';
 import '../providers/auth_provider.dart';
 import '../providers/chat_provider.dart';
 import '../services/socket_service.dart';
@@ -99,6 +100,20 @@ class _ChatScreenState extends State<ChatScreen> {
     if (path != null) await _sendMedia(File(path), 'file');
   }
 
+  /// Start a voice or video call with the other person in this chat.
+  void _call(User other, {required bool video}) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => CallScreen(
+          peerId: other.id,
+          peerName: other.displayName,
+          video: video,
+          isCaller: true,
+        ),
+      ),
+    );
+  }
+
   Conversation? _findConversation(ChatProvider chat) {
     for (final c in chat.conversations) {
       if (c.id == widget.conversationId) return c;
@@ -148,18 +163,18 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
         actions: [
-          if (other != null)
+          if (other != null) ...[
+            IconButton(
+              icon: const Icon(Icons.call_outlined),
+              tooltip: 'Voice call',
+              onPressed: () => _call(other, video: false),
+            ),
             IconButton(
               icon: const Icon(Icons.videocam_outlined),
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => CallScreen(
-                    peerId: other.id,
-                    peerName: other.displayName,
-                  ),
-                ),
-              ),
+              tooltip: 'Video call',
+              onPressed: () => _call(other, video: true),
             ),
+          ],
         ],
       ),
       body: Column(
