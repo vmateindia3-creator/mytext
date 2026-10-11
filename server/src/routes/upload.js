@@ -1,33 +1,21 @@
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const crypto = require('crypto');
 const Conversation = require('../models/Conversation');
 const { requireAuth } = require('../middleware/auth');
+const storage = require('../utils/storage');
 
 const router = express.Router();
 
-const UPLOAD_DIR = path.join(__dirname, '..', '..', 'uploads');
-fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).slice(0, 10);
-    const id = crypto.randomBytes(16).toString('hex');
-    cb(null, `${Date.now()}-${id}${ext}`);
-  },
-});
-
+// Keep the file in memory so any storage driver (local / S3 / Cloudinary) can
+// receive the raw bytes.
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 25 * 1024 * 1024 }, // 25 MB
 });
 
 /**
  * POST /api/upload  (multipart form field: "file", optional "conversationId")
- * Stores the file and returns a URL the app can attach to a message.
+ * Stores the file using the configured driver and returns a URL to attach.
  */
 router.post('/', requireAuth, upload.single('file'), async (req, res) => {
   try {
@@ -37,22 +25,26 @@ router.post('/', requireAuth, upload.single('file'), async (req, res) => {
     if (req.body.conversationId) {
       const conv = await Conversation.findById(req.body.conversationId);
       if (!conv || !conv.members.some((m) => m.toString() === req.user._id.toString())) {
-        fs.unlink(req.file.path, () => {});
         return res.status(403).json({ error: 'not a member of this conversation' });
       }
     }
 
-    const base = (process.env.PUBLIC_URL || '').replace(/\/$/, '');
-    const relPath = `/uploads/${req.file.filename}`;
+    const { url, key } = await storage.putObject({
+      buffer: req.file.buffer,
+      filename: req.file.originalname,
+      mimetype: req.file.mimetype,
+    });
+
     res.status(201).json({
-      url: base ? `${base}${relPath}` : relPath,
+      url,
+      key,
       name: req.file.originalname,
       mime: req.file.mimetype,
       size: req.file.size,
     });
   } catch (err) {
     console.error('[upload]', err);
-    res.status(500).json({ error: 'upload failed' });
+    res.status(500).json({ error: err.message || 'upload failed' });
   }
 });
 

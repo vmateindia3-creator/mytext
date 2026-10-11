@@ -3,6 +3,7 @@ const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
 const User = require('../models/User');
 const { requireAuth } = require('../middleware/auth');
+const { shapeMessage } = require('../utils/messages');
 
 const router = express.Router();
 
@@ -126,26 +127,7 @@ router.get('/:id/messages', requireAuth, async (req, res) => {
       .limit(limit)
       .populate('sender', 'username displayName avatarUrl');
 
-    res.json({
-      messages: messages.reverse().map((m) => ({
-        id: m._id.toString(),
-        conversation: m.conversation.toString(),
-        sender: {
-          id: m.sender._id.toString(),
-          username: m.sender.username,
-          displayName: m.sender.displayName || m.sender.username,
-          avatarUrl: m.sender.avatarUrl,
-        },
-        kind: m.kind,
-        text: m.text,
-        mediaUrl: m.mediaUrl,
-        mediaName: m.mediaName,
-        mediaMime: m.mediaMime,
-        mediaSize: m.mediaSize,
-        readBy: m.readBy.map((r) => r.toString()),
-        createdAt: m.createdAt,
-      })),
-    });
+    res.json({ messages: messages.reverse().map(shapeMessage) });
   } catch (err) {
     console.error('[conversations/messages]', err);
     res.status(500).json({ error: 'could not load messages' });

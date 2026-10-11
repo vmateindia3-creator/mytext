@@ -6,6 +6,7 @@ import 'providers/chat_provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
 import 'services/api_service.dart';
+import 'services/key_service.dart';
 import 'services/socket_service.dart';
 import 'services/storage_service.dart';
 
@@ -20,17 +21,20 @@ class MytextApp extends StatelessWidget {
         Provider(create: (_) => ApiService()),
         Provider(create: (_) => StorageService()),
         Provider(create: (_) => SocketService()),
+        Provider(create: (_) => KeyService()),
         ChangeNotifierProvider(
           create: (ctx) => AuthProvider(
             ctx.read<ApiService>(),
             ctx.read<StorageService>(),
             ctx.read<SocketService>(),
+            ctx.read<KeyService>(),
           )..restore(),
         ),
         ChangeNotifierProvider(
           create: (ctx) => ChatProvider(
             ctx.read<ApiService>(),
             ctx.read<SocketService>(),
+            ctx.read<KeyService>(),
           ),
         ),
       ],

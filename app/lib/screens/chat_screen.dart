@@ -171,7 +171,11 @@ class _ChatScreenState extends State<ChatScreen> {
               itemCount: messages.length,
               itemBuilder: (_, i) {
                 final m = messages[i];
-                return MessageBubble(message: m, isMine: m.sender.id == myId);
+                return MessageBubble(
+                  message: m,
+                  isMine: m.sender.id == myId,
+                  text: chat.displayText(m),
+                );
               },
             ),
           ),

@@ -170,4 +170,24 @@ class ApiService {
       size: (data['size'] ?? 0) as int,
     );
   }
+
+  // ---- Encryption keys & push devices -------------------------------------
+
+  /// Publish this device's encryption public key.
+  Future<void> setPublicKey(String publicKey) async {
+    await _send('POST', '/api/users/me/public-key', body: {'publicKey': publicKey});
+  }
+
+  /// Fetch the encryption public keys of other users.
+  Future<Map<String, String>> fetchKeys(List<String> userIds) async {
+    if (userIds.isEmpty) return {};
+    final data = await _send('GET', '/api/users/keys?ids=${userIds.join(',')}');
+    return (data['keys'] as Map<String, dynamic>)
+        .map((k, v) => MapEntry(k, (v ?? '') as String));
+  }
+
+  /// Register a push-notification device token.
+  Future<void> registerDevice(String token) async {
+    await _send('POST', '/api/users/me/devices', body: {'token': token});
+  }
 }

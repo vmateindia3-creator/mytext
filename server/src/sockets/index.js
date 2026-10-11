@@ -4,6 +4,7 @@ const Conversation = require('../models/Conversation');
 const { verifyToken } = require('../middleware/auth');
 const { createMessage } = require('../utils/messages');
 const { iceServers } = require('../utils/ice');
+const push = require('../utils/push');
 
 /** userId -> Set<socketId> so we can track multi-device presence. */
 const onlineSockets = new Map();
@@ -20,6 +21,35 @@ async function isMember(conversationId, userId) {
   if (!conv) return null;
   const ok = conv.members.some((m) => m.toString() === userId.toString());
   return ok ? conv : null;
+}
+
+/**
+ * Send a push notification to every member who is not currently connected.
+ * Best-effort: failures are logged, never thrown.
+ */
+async function notifyOfflineMembers(conv, senderId, message) {
+  try {
+    const offlineIds = conv.members
+      .map((m) => m.toString())
+      .filter((id) => id !== senderId.toString() && !onlineSockets.has(id));
+    if (offlineIds.length === 0) return;
+
+    const users = await User.find({ _id: { $in: offlineIds } }).select('pushTokens');
+    const tokens = users.flatMap((u) => u.pushTokens || []);
+    if (tokens.length === 0) return;
+
+    const body = message.encrypted
+      ? 'New message'
+      : message.text || (message.kind === 'image' ? 'Photo' : 'New message');
+
+    await push.sendToTokens(tokens, {
+      title: 'Mytext',
+      body,
+      data: { conversationId: message.conversation, messageId: message.id },
+    });
+  } catch (err) {
+    console.error('[push] notify failed:', err.message);
+  }
 }
 
 function initSockets(httpServer, corsOrigin) {
@@ -72,7 +102,7 @@ function initSockets(httpServer, corsOrigin) {
     // ---- Sending messages -------------------------------------------------
     socket.on('message:send', async (payload = {}, ack) => {
       try {
-        const { conversationId, text = '', kind = 'text', media = {} } = payload;
+        const { conversationId, text = '', kind = 'text', media = {}, enc = null } = payload;
         const conv = await isMember(conversationId, uid);
         if (!conv) return typeof ack === 'function' && ack({ error: 'not a member' });
 
@@ -82,6 +112,7 @@ function initSockets(httpServer, corsOrigin) {
           kind,
           text: (text || '').slice(0, 4000),
           media,
+          enc,
         });
 
         io.to(room(conversationId)).emit('message:new', message);
@@ -92,6 +123,9 @@ function initSockets(httpServer, corsOrigin) {
             lastMessage: message,
           });
         });
+
+        // Push to members who are offline right now.
+        notifyOfflineMembers(conv, uid, message);
 
         if (typeof ack === 'function') ack({ ok: true, message });
       } catch (err) {

@@ -23,7 +23,8 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final chat = context.read<ChatProvider>();
-      chat.attachListeners();
+      final userId = context.read<AuthProvider>().user?.id;
+      if (userId != null) chat.attachListeners(userId);
       chat.refreshConversations();
     });
   }

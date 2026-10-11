@@ -27,6 +27,8 @@ class Message {
     this.mediaUrl,
     this.mediaName,
     required this.createdAt,
+    this.encrypted = false,
+    this.enc,
     List<String>? readBy,
   }) : readBy = readBy ?? [];
 
@@ -39,6 +41,11 @@ class Message {
   final String? mediaName;
   final DateTime createdAt;
   final List<String> readBy;
+
+  /// End-to-end encryption: when true, [text] is empty and the real content is
+  /// in [enc], which only the conversation members can decrypt.
+  final bool encrypted;
+  final Map<String, dynamic>? enc;
 
   bool get isMedia => kind == MessageKind.image || kind == MessageKind.file;
 
@@ -53,6 +60,8 @@ class Message {
       mediaName: json['mediaName'] as String?,
       createdAt:
           DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+      encrypted: (json['encrypted'] ?? false) as bool,
+      enc: (json['enc'] as Map?)?.cast<String, dynamic>(),
       readBy: (json['readBy'] as List<dynamic>? ?? const [])
           .map((e) => e.toString())
           .toList(),

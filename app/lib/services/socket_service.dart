@@ -54,12 +54,14 @@ class SocketService {
     String text, {
     String kind = 'text',
     Map<String, dynamic>? media,
+    Map<String, dynamic>? enc,
   }) {
     _socket?.emit('message:send', {
       'conversationId': conversationId,
       'text': text,
       'kind': kind,
       if (media != null) 'media': media,
+      if (enc != null) 'enc': enc,
     });
   }
 

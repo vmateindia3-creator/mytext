@@ -6,12 +6,21 @@ const Conversation = require('../models/Conversation');
  * a client-shaped object. Shared by the REST route and the socket handler so
  * both paths behave identically.
  */
-async function createMessage({ conversation, sender, kind = 'text', text = '', media = {} }) {
+async function createMessage({
+  conversation,
+  sender,
+  kind = 'text',
+  text = '',
+  media = {},
+  enc = null,
+}) {
   const msg = await Message.create({
     conversation: conversation._id,
     sender: sender._id || sender,
     kind,
     text,
+    encrypted: !!enc,
+    enc,
     mediaUrl: media.url || '',
     mediaName: media.name || '',
     mediaMime: media.mime || '',
@@ -24,6 +33,11 @@ async function createMessage({ conversation, sender, kind = 'text', text = '', m
 
   await msg.populate('sender', 'username displayName avatarUrl');
 
+  return shapeMessage(msg);
+}
+
+/** Turn a Message document into the JSON the apps consume. */
+function shapeMessage(msg) {
   return {
     id: msg._id.toString(),
     conversation: msg.conversation.toString(),
@@ -35,13 +49,15 @@ async function createMessage({ conversation, sender, kind = 'text', text = '', m
     },
     kind: msg.kind,
     text: msg.text,
+    encrypted: !!msg.encrypted,
+    enc: msg.enc || null,
     mediaUrl: msg.mediaUrl,
     mediaName: msg.mediaName,
     mediaMime: msg.mediaMime,
     mediaSize: msg.mediaSize,
-    readBy: [],
+    readBy: (msg.readBy || []).map((r) => r.toString()),
     createdAt: msg.createdAt,
   };
 }
 
-module.exports = { createMessage };
+module.exports = { createMessage, shapeMessage };

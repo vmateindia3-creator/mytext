@@ -10,10 +10,14 @@ class MessageBubble extends StatelessWidget {
     super.key,
     required this.message,
     required this.isMine,
+    required this.text,
   });
 
   final Message message;
   final bool isMine;
+
+  /// The text to render — already decrypted for encrypted messages.
+  final String text;
 
   @override
   Widget build(BuildContext context) {
@@ -77,11 +81,11 @@ class MessageBubble extends StatelessWidget {
                   ),
                 ],
               ),
-            if (message.text.isNotEmpty)
+            if (text.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child: Text(
-                  message.text,
+                  text,
                   style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.35),
                 ),
               ),

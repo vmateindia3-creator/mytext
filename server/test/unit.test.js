@@ -68,6 +68,41 @@ async function main() {
   assert.strictEqual(await get('/nope'), 404);
 
   server.close();
+
+  console.log('7. media storage driver...');
+  delete process.env.STORAGE_DRIVER;
+  const storage = require('../src/utils/storage');
+  assert.strictEqual(storage.driverName(), 'local');
+  assert.ok(storage.isConfigured());
+  const stored = await storage.putObject({
+    buffer: Buffer.from('hello'),
+    filename: 'note.txt',
+    mimetype: 'text/plain',
+  });
+  assert.ok(stored.url.includes('/uploads/'), 'expected a /uploads/ url');
+  assert.ok(require('fs').existsSync(require('path').join(storage.UPLOAD_DIR, stored.key)));
+  require('fs').unlinkSync(require('path').join(storage.UPLOAD_DIR, stored.key));
+
+  process.env.STORAGE_DRIVER = 's3';
+  process.env.S3_BUCKET = 'demo';
+  process.env.S3_ACCESS_KEY_ID = 'key';
+  assert.ok(storage.isConfigured());
+  delete process.env.S3_BUCKET;
+  assert.ok(!storage.isConfigured(), 's3 without a bucket should be unconfigured');
+  delete process.env.STORAGE_DRIVER;
+  delete process.env.S3_ACCESS_KEY_ID;
+
+  console.log('8. push notifications are a safe no-op when unconfigured...');
+  delete process.env.FIREBASE_SERVICE_ACCOUNT;
+  delete process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+  const push = require('../src/utils/push');
+  assert.strictEqual(push.isConfigured(), false);
+  const none = await push.sendToTokens([], { title: 't', body: 'b' });
+  assert.strictEqual(none.sent, 0);
+  const unconfigured = await push.sendToTokens(['device-1'], { title: 't', body: 'b' });
+  assert.strictEqual(unconfigured.sent, 0);
+  assert.strictEqual(unconfigured.skipped, 1);
+
   console.log('\nUNIT TESTS PASSED ✓');
   process.exit(0);
 }

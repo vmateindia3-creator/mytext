@@ -15,6 +15,13 @@ const userSchema = new mongoose.Schema(
     avatarUrl: { type: String, default: '' },
     lastSeen: { type: Date, default: Date.now },
     online: { type: Boolean, default: false },
+
+    // Device tokens for push notifications (Firebase Cloud Messaging).
+    pushTokens: [{ type: String }],
+
+    // Base64-encoded X25519 public key, used for end-to-end encryption.
+    // The matching private key never leaves the user's device.
+    publicKey: { type: String, default: '' },
   },
   { timestamps: true }
 );
@@ -28,6 +35,7 @@ userSchema.methods.toPublic = function toPublic() {
     avatarUrl: this.avatarUrl,
     online: this.online,
     lastSeen: this.lastSeen,
+    publicKey: this.publicKey,
   };
 };
 

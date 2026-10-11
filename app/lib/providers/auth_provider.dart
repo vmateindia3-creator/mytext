@@ -4,16 +4,18 @@ import 'package:flutter/foundation.dart';
 
 import '../models/user.dart';
 import '../services/api_service.dart';
+import '../services/key_service.dart';
 import '../services/socket_service.dart';
 import '../services/storage_service.dart';
 
 /// Holds the signed-in user and drives login / registration / logout.
 class AuthProvider extends ChangeNotifier {
-  AuthProvider(this._api, this._storage, this._socket);
+  AuthProvider(this._api, this._storage, this._socket, this._keys);
 
   final ApiService _api;
   final StorageService _storage;
   final SocketService _socket;
+  final KeyService _keys;
 
   User? _user;
   String? _token;
@@ -33,9 +35,24 @@ class AuthProvider extends ChangeNotifier {
       _user = User.fromJson(jsonDecode(userJson) as Map<String, dynamic>);
       _api.setToken(token);
       _socket.connect(token);
+      await _publishIdentity();
     }
     _loading = false;
     notifyListeners();
+  }
+
+  /// Create (or load) this device's encryption identity and publish its public
+  /// key so other people can message us securely.
+  Future<void> _publishIdentity() async {
+    if (_user == null) return;
+    try {
+      _keys.setUser(_user!.id);
+      final identity = await _keys.identity();
+      await _api.setPublicKey(identity.publicKey);
+    } catch (err) {
+      // Non-fatal: the app still works, messages just fall back to plaintext.
+      debugPrint('Could not publish encryption key: $err');
+    }
   }
 
   Future<void> _applySession(String token, User user) async {
@@ -45,6 +62,7 @@ class AuthProvider extends ChangeNotifier {
     await _storage.saveToken(token);
     await _storage.saveUserJson(jsonEncode(user.toJson()));
     _socket.connect(token);
+    await _publishIdentity();
     notifyListeners();
   }
 
