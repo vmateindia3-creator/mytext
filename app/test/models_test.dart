@@ -22,6 +22,15 @@ void main() {
       final user = User.fromJson({'id': 'u2', 'username': 'bob'});
       expect(user.displayName, 'bob');
     });
+
+    test('reads the phone number', () {
+      final user = User.fromJson({
+        'id': 'u3',
+        'username': 'user123456',
+        'phone': '+919876543210',
+      });
+      expect(user.phone, '+919876543210');
+    });
   });
 
   group('messageKindFromString', () {

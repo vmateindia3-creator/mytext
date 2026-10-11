@@ -4,9 +4,9 @@ import 'package:provider/provider.dart';
 import '../config.dart';
 import '../providers/auth_provider.dart';
 import '../theme.dart';
-import 'register_screen.dart';
+import 'otp_screen.dart';
 
-/// Sign-in screen.
+/// First step of sign-in: enter your phone number.
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -15,28 +15,35 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _username = TextEditingController();
-  final _password = TextEditingController();
+  final _phone = TextEditingController();
   String? _error;
   bool _busy = false;
 
   @override
   void dispose() {
-    _username.dispose();
-    _password.dispose();
+    _phone.dispose();
     super.dispose();
   }
 
-  Future<void> _submit() async {
+  Future<void> _sendCode() async {
+    final phone = _phone.text.trim();
+    if (phone.isEmpty) {
+      setState(() => _error = 'Enter your phone number');
+      return;
+    }
+
     setState(() {
       _error = null;
       _busy = true;
     });
     try {
-      await context.read<AuthProvider>().login(
-            _username.text.trim(),
-            _password.text,
-          );
+      final devCode = await context.read<AuthProvider>().requestOtp(phone);
+      if (!mounted) return;
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => OtpScreen(phone: phone, devCode: devCode),
+        ),
+      );
     } catch (e) {
       setState(() => _error = e.toString());
     } finally {
@@ -58,26 +65,27 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 12),
                 Text(
                   AppConfig.appName,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineMedium
+                      ?.copyWith(fontWeight: FontWeight.w800),
                 ),
                 const SizedBox(height: 4),
                 const Text(
-                  'Fast, simple, real-time messaging',
+                  'Enter your phone number to continue',
+                  textAlign: TextAlign.center,
                   style: TextStyle(color: AppTheme.textMuted),
                 ),
                 const SizedBox(height: 32),
                 TextField(
-                  controller: _username,
+                  controller: _phone,
+                  keyboardType: TextInputType.phone,
                   autocorrect: false,
-                  decoration: const InputDecoration(hintText: 'Username'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _password,
-                  obscureText: true,
-                  decoration: const InputDecoration(hintText: 'Password'),
+                  decoration: const InputDecoration(
+                    hintText: '+91 98765 43210',
+                    prefixIcon: Icon(Icons.phone_outlined),
+                    labelText: 'Phone number',
+                  ),
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 12),
@@ -85,21 +93,20 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: _busy ? null : _submit,
+                  onPressed: _busy ? null : _sendCode,
                   child: _busy
                       ? const SizedBox(
                           height: 22,
                           width: 22,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Text('Sign in'),
+                      : const Text('Send code'),
                 ),
                 const SizedBox(height: 12),
-                TextButton(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                  ),
-                  child: const Text('New here? Create an account'),
+                const Text(
+                  'We will text you a 6-digit verification code.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
                 ),
               ],
             ),

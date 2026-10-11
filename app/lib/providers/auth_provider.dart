@@ -71,6 +71,19 @@ class AuthProvider extends ChangeNotifier {
     await _applySession(res.token, res.user);
   }
 
+  /// Ask the server to text a code to [phone].
+  /// Returns the code when the server has no SMS provider configured (dev mode).
+  Future<String?> requestOtp(String phone) async {
+    final res = await _api.requestOtp(phone);
+    return res.devCode;
+  }
+
+  /// Check the code and sign in — creating the account the first time.
+  Future<void> verifyOtp(String phone, String code) async {
+    final res = await _api.verifyOtp(phone, code);
+    await _applySession(res.token, res.user);
+  }
+
   Future<void> register(String username, String password, {String? displayName}) async {
     final res = await _api.register(username, password, displayName: displayName);
     await _applySession(res.token, res.user);

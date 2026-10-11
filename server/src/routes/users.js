@@ -1,6 +1,7 @@
 const express = require('express');
 const User = require('../models/User');
 const { requireAuth } = require('../middleware/auth');
+const otp = require('../utils/otp');
 
 const router = express.Router();
 
@@ -19,6 +20,7 @@ router.get('/', requireAuth, async (req, res) => {
       filter.$or = [
         { username: { $regex: safe, $options: 'i' } },
         { displayName: { $regex: safe, $options: 'i' } },
+        { phone: { $regex: safe, $options: 'i' } },
       ];
     }
     const users = await User.find(filter).limit(30).sort({ username: 1 });
@@ -51,6 +53,25 @@ router.get('/keys', requireAuth, async (req, res) => {
   } catch (err) {
     console.error('[users/keys]', err);
     res.status(500).json({ error: 'could not load keys' });
+  }
+});
+
+/**
+ * GET /api/users/lookup?phone=+919876543210
+ * Find the account that owns a phone number, so you can start a chat with it.
+ */
+router.get('/lookup', requireAuth, async (req, res) => {
+  try {
+    const phone = otp.normalizePhone(req.query.phone);
+    if (!otp.isValidPhone(phone)) {
+      return res.status(400).json({ error: 'Enter a valid phone number' });
+    }
+    const user = await User.findOne({ phone });
+    if (!user) return res.status(404).json({ error: 'No Mytext account uses that number yet' });
+    res.json({ user: user.toPublic() });
+  } catch (err) {
+    console.error('[users/lookup]', err);
+    res.status(500).json({ error: 'could not look up that number' });
   }
 });
 

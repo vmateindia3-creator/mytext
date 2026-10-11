@@ -95,6 +95,40 @@ class ApiService {
     );
   }
 
+  // ---- Phone + OTP ---------------------------------------------------------
+
+  /// Ask the server to text a one-time code to [phone].
+  /// Returns the code itself when the server runs without an SMS provider
+  /// (dev mode) so the flow can be tested for free.
+  Future<({bool sent, String? devCode})> requestOtp(String phone) async {
+    final data = await _send('POST', '/api/auth/request-otp', body: {'phone': phone});
+    return (
+      sent: (data['sent'] ?? false) as bool,
+      devCode: data['devCode'] as String?,
+    );
+  }
+
+  /// Check the code and, if it is right, sign in (creating the account if new).
+  Future<({String token, User user})> verifyOtp(String phone, String code) async {
+    final data = await _send('POST', '/api/auth/verify-otp', body: {
+      'phone': phone,
+      'code': code,
+    });
+    return (
+      token: data['token'] as String,
+      user: User.fromJson(data['user'] as Map<String, dynamic>),
+    );
+  }
+
+  /// Find the account that owns a phone number, so you can start a chat.
+  Future<User> lookupByPhone(String phone) async {
+    final data = await _send(
+      'GET',
+      '/api/users/lookup?phone=${Uri.encodeQueryComponent(phone)}',
+    );
+    return User.fromJson(data['user'] as Map<String, dynamic>);
+  }
+
   // ---- Users --------------------------------------------------------------
 
   Future<List<User>> searchUsers(String query) async {

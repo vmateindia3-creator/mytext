@@ -103,6 +103,30 @@ async function main() {
   assert.strictEqual(unconfigured.sent, 0);
   assert.strictEqual(unconfigured.skipped, 1);
 
+  console.log('9. phone + OTP helpers...');
+  const otp = require('../src/utils/otp');
+  assert.strictEqual(otp.normalizePhone('+91 98765-43210'), '+919876543210');
+  assert.strictEqual(otp.normalizePhone('09876543210'), '09876543210');
+  assert.strictEqual(otp.normalizePhone(''), '');
+  assert.ok(otp.isValidPhone('+919876543210'));
+  assert.ok(!otp.isValidPhone('123'));
+  const code = otp.generateCode();
+  assert.strictEqual(code.length, 6);
+  assert.ok(/^\d{6}$/.test(code));
+  assert.strictEqual(otp.hashCode('123456', '+91123'), otp.hashCode('123456', '+91123'));
+  assert.notStrictEqual(otp.hashCode('123456', '+91123'), otp.hashCode('123456', '+91999'));
+  assert.ok(otp.safeEqual(otp.hashCode('123456', 'p'), otp.hashCode('123456', 'p')));
+  assert.ok(!otp.safeEqual(otp.hashCode('123456', 'p'), otp.hashCode('654321', 'p')));
+
+  console.log('10. SMS sender falls back to the console stub...');
+  delete process.env.SMS_DRIVER;
+  const sms = require('../src/utils/sms');
+  assert.strictEqual(sms.driverName(), 'console');
+  assert.strictEqual(sms.isRealProvider(), false);
+  const sent = await sms.send('+919876543210', 'test message');
+  assert.strictEqual(sent.sent, false);
+  assert.strictEqual(sent.provider, 'console');
+
   console.log('\nUNIT TESTS PASSED ✓');
   process.exit(0);
 }

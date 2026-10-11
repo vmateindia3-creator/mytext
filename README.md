@@ -11,8 +11,8 @@ A working, self-hostable messaging app — 1:1 chat, group chats, media sharing,
 
 ## Features
 
-- **Accounts** — register / login with JWT auth, bcrypt-hashed passwords.
-- **1:1 chat** — real-time messages over Socket.io, online/last-seen presence.
+- **Accounts** — sign up and sign in with a **phone number + SMS one-time code**. Username/password is still available for accounts that prefer it.
+- **1:1 chat** — real-time messages over Socket.io, online/last-seen presence. Start a chat by typing someone's **phone number**.
 - **Group chats** — create groups, add members, admin list.
 - **Media sharing** — photos and documents (25 MB limit), on local disk, S3 or Cloudinary.
 - **End-to-end encrypted text** — X25519 + HKDF + AES-256-GCM; the server only stores ciphertext.
@@ -72,6 +72,31 @@ flutter pub get
 flutter build apk --release        # build/app/outputs/flutter-apk/app-release.apk
 flutter build appbundle --release  # for Google Play
 ```
+
+---
+
+## Phone login (OTP)
+
+Signing up needs only a phone number:
+
+1. The app asks the server to send a code (`POST /api/auth/request-otp`).
+2. The server stores a **hash** of the code (never the code itself) with a 5-minute expiry and a 30-second resend throttle.
+3. The app checks it (`POST /api/auth/verify-otp`). On success the account is created if it is new, and the app receives a normal login token.
+
+### Sending real SMS
+
+Pick a provider with `SMS_DRIVER` in `server/.env`:
+
+| Driver | Vars |
+| --- | --- |
+| `console` (default) | none — **no SMS is sent**. The code is printed in the server log *and* returned to the app so you can test the whole flow for free. |
+| `twilio` | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` |
+| `msg91` | `MSG91_AUTH_KEY`, `MSG91_SENDER_ID`, `MSG91_TEMPLATE_ID` |
+| `fast2sms` | `FAST2SMS_API_KEY` |
+
+> **Important:** while `SMS_DRIVER=console`, the API returns the code in its response (`devCode`) and the app shows it on the OTP screen. That is for testing only. Once a real provider is configured, set `OTP_DEV_MODE=false` so the code is never returned over the network.
+
+To chat with someone, you need their phone number — they must already have the app installed and signed in. Type the number under **New chat → Find**.
 
 ---
 
@@ -207,10 +232,13 @@ The default release build is signed with the debug key (fine for testing). For t
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| `POST` | `/api/auth/register` | Create account → `{ token, user }` |
-| `POST` | `/api/auth/login` | Sign in → `{ token, user }` |
+| `POST` | `/api/auth/request-otp` | Send an SMS code to a phone number |
+| `POST` | `/api/auth/verify-otp` | Check the code → `{ token, user }` |
+| `POST` | `/api/auth/register` | Create account with username/password |
+| `POST` | `/api/auth/login` | Sign in with username/password |
 | `GET` | `/api/users/me` | Current profile |
-| `GET` | `/api/users?q=` | Search people |
+| `GET` | `/api/users?q=` | Search people (name, username or phone) |
+| `GET` | `/api/users/lookup?phone=` | Find the account for a phone number |
 | `GET` | `/api/users/keys?ids=` | Public encryption keys |
 | `POST` | `/api/users/me/public-key` | Publish encryption public key |
 | `POST` | `/api/users/me/devices` | Register a push token |

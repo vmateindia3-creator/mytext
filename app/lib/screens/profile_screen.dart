@@ -44,6 +44,12 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 32),
+                if (user.phone.isNotEmpty)
+                  ListTile(
+                    leading: const Icon(Icons.phone_outlined),
+                    title: const Text('Phone'),
+                    subtitle: Text(user.phone),
+                  ),
                 ListTile(
                   leading: const Icon(Icons.info_outline),
                   title: const Text('App'),
